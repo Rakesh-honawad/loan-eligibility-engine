@@ -1,0 +1,48 @@
+﻿service: loan-eligibility
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.9
+  region: us-east-1
+  stage: dev
+  timeout: 300
+  memorySize: 512
+  lambdaHashingVersion: 20201221
+  
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+            - s3:ListBucket
+          Resource: 
+            - "arn:aws:s3:::loan-eligibility-uploads-149536471298-rakesh"
+            - "arn:aws:s3:::loan-eligibility-uploads-149536471298-rakesh/*"
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: "*"
+
+functions:
+  csvProcessor:
+    handler: functions/csv-processor/handler.process
+    timeout: 300
+    events:
+      - s3:
+          bucket: loan-eligibility-uploads-149536471298-rakesh
+          event: s3:ObjectCreated:*
+          rules:
+            - suffix: .csv
+          existing: true
+
+package:
+  patterns:
+    - "!node_modules/**"
+    - "!.git/**"
+    - "!venv/**"
+    - "!__pycache__/**"
